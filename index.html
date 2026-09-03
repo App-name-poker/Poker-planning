@@ -306,7 +306,6 @@
 <body>
 
     <div class="container">
-        <!-- ECAN D'ACCUEIL CASINO -->
         <div id="login-screen" class="login-card">
             <div class="app-logo">🎰</div>
             <h1 class="casino-title">Casino Royale</h1>
@@ -320,9 +319,9 @@
                 <div class="form-group">
                     <label for="user-role">Votre Rôle à la table</label>
                     <select id="user-role" required>
-                        <option value="DEV">👨‍💻 Développeur (Table Devs)</option>
-                        <option value="TESTER">🧪 Testeur / QA (Table QA)</option>
-                        <option value="BA">👔 Croupier / PO (Spectateur)</option>
+                        <option value="DEV">🎩 Flambeur (Table Devs)</option>
+                        <option value="TESTER">🕵️ Inspecteur (Table QA)</option>
+                        <option value="BA">🤵 Croupier (Spectateur)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -334,7 +333,6 @@
             <p id="status-msg" style="margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-muted);"></p>
         </div>
 
-        <!-- PLATEAU DE JEU CASINO -->
         <div id="game-screen" class="hidden">
             <header class="game-header">
                 <div class="header-left">
@@ -345,40 +343,34 @@
             </header>
 
             <div class="game-body">
-                <!-- TITRE DE LA USER STORY -->
                 <div class="story-bar">
                     <span>🎰</span>
                     <input type="text" id="story-title" class="story-input" placeholder="User Story en cours d'estimation (ex: JIRA-1042)..." oninput="broadcastStoryTitle(this.value)">
                 </div>
 
                 <div class="poker-arena" id="poker-arena">
-                    <!-- STRUCTURE TAPIS DE CASINO EN BOIS ET FEUTRINE -->
                     <div class="casino-table-frame">
                         <div class="casino-felt">
                             <div class="tables-container">
-                                <!-- TABLE DEVS -->
                                 <div class="role-zone">
-                                    <div class="zone-title">👨‍💻 Table Développeurs</div>
+                                    <div class="zone-title">🎩 Flambeurs (Devs)</div>
                                     <div class="players-grid" id="dev-players"></div>
                                 </div>
 
-                                <!-- TABLE TESTEURS -->
                                 <div class="role-zone">
-                                    <div class="zone-title">🧪 Table Testeurs / QA</div>
+                                    <div class="zone-title">🕵️ Inspecteurs (QA)</div>
                                     <div class="players-grid" id="tester-players"></div>
                                 </div>
                             </div>
 
-                            <!-- SPECTATEURS (PO / BA) -->
                             <div class="spectators-bar">
-                                <strong style="color: var(--gold-bright);">👔 Croupiers & Facilitateurs :</strong>
+                                <strong style="color: var(--gold-bright);">🤵 Croupiers & Maîtres du Jeu :</strong>
                                 <div class="spectators-list" id="spectator-players"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- PALETTE D'EMOJIS CASINO -->
                 <div class="reaction-bar">
                     <button class="reaction-btn" onclick="sendEmoji('👏')" title="Bravo !">👏</button>
                     <button class="reaction-btn" onclick="sendEmoji('🎲')" title="Un coup de dés !">🎲</button>
@@ -392,19 +384,17 @@
                     <button class="reaction-btn" onclick="sendEmoji('💸')" title="Ça va coûter cher !">💸</button>
                 </div>
 
-                <!-- STATS -->
                 <div id="stats-summary" class="stats-wrapper hidden">
                     <div class="stats-box">
                         <div class="stat-value" id="stat-dev-avg">-</div>
-                        <div class="stat-label">Moyenne Devs</div>
+                        <div class="stat-label">Moyenne Flambeurs</div>
                     </div>
                     <div class="stats-box">
                         <div class="stat-value" id="stat-qa-avg">-</div>
-                        <div class="stat-label">Moyenne Testeurs</div>
+                        <div class="stat-label">Moyenne Inspecteurs</div>
                     </div>
                 </div>
 
-                <!-- MAIN DU JOUEUR -->
                 <div class="hand-container">
                     <div class="hand-title" id="deck-title">Faites vos jeux !</div>
                     <div class="deck-grid" id="deck"></div>
@@ -679,7 +669,7 @@
             const deckTitle = document.getElementById('deck-title');
 
             if (myRole === 'BA') {
-                deckTitle.innerText = "👔 Croupier / Facilitateur";
+                deckTitle.innerText = "🤵 Croupier / Facilitateur";
                 deck.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">Vous dirigez la table sans miser de jetons.</div>`;
                 return;
             }
@@ -711,7 +701,7 @@
                     specBadge.className = 'player-name';
                     specBadge.setAttribute('data-peer-id', pId);
                     specBadge.style.cssText = "background:rgba(223, 177, 91, 0.1); padding: 4px 10px; border-radius:12px; border:1px solid var(--gold); color: var(--gold-bright); font-weight:700;";
-                    specBadge.innerText = `👔 ${p.name}`;
+                    specBadge.innerText = `🤵 ${p.name}`;
                     specContainer.appendChild(specBadge);
                     return;
                 }
@@ -728,7 +718,8 @@
                     if (p.role === 'TESTER') qaVotes.push(p.vote);
                 }
 
-                const avatarEmoji = p.role === 'DEV' ? '👨‍💻' : '🧪';
+                // AVATARS THÉMATISÉS CASINO
+                const avatarEmoji = p.role === 'DEV' ? '🎩' : '🕵️';
 
                 playerEl.innerHTML = `
                     <div class="avatar-chair">
