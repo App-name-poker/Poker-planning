@@ -1,23 +1,39 @@
-name: Déploiement Automatique
+name: Déploiement GitHub Pages
 
-# Définition des événements qui déclenchent le déploiement
 on:
   push:
     branches:
-      - main         # Se déclenche lors d'un 'git push' sur la branche main
-  workflow_dispatch: # Permet aussi de le lancer manuellement
+      - main  # Ou master si ta branche s'appelle master
+  workflow_dispatch:
+
+# Autorise le script à publier le site sur GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # Le serveur virtuel fourni par GitHub
-
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
     steps:
-      # 1. Récupère le code de ton dépôt sur le serveur virtuel
-      - name: Récupérer le code source
+      - name: Récupérer le code
         uses: actions/checkout@v4
 
-      # 2. Exécute tes étapes de build ou de déploiement
-      - name: Exécuter le script de déploiement
-        run: |
-          echo "Le code a été récupéré avec succès !"
-          echo "Prêt pour l'étape de déploiement !"
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Préparer les fichiers HTML/CSS
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'  # Déploie le dossier courant (où se trouve index.html)
+
+      - name: Déployer sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
