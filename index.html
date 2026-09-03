@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planning Poker Agile - Premium Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+    <!-- Canvas Confetti pour la célébration du consensus -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -200,6 +201,7 @@
 <body>
 
     <div class="container">
+        <!-- LOGIN SCREEN -->
         <div id="login-screen" class="login-card">
             <div class="app-logo">🃏</div>
             <h1>Planning Poker</h1>
@@ -227,6 +229,7 @@
             <p id="status-msg" style="margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-muted);"></p>
         </div>
 
+        <!-- PLATEAU DE JEU -->
         <div id="game-screen" class="hidden">
             <header class="game-header">
                 <div class="header-left">
@@ -237,6 +240,7 @@
             </header>
 
             <div class="game-body">
+                <!-- TITRE DE LA USER STORY -->
                 <div class="story-bar">
                     <span>📌</span>
                     <input type="text" id="story-title" class="story-input" placeholder="Entrez le titre de la User Story (ex: JIRA-1042)..." oninput="broadcastStoryTitle(this.value)">
@@ -244,23 +248,27 @@
 
                 <div class="poker-arena" id="poker-arena">
                     <div class="tables-container">
+                        <!-- TABLE DEVS -->
                         <div class="role-zone dev">
                             <div class="zone-title">👨‍💻 Table Développeurs</div>
                             <div class="players-grid" id="dev-players"></div>
                         </div>
 
+                        <!-- TABLE TESTEURS -->
                         <div class="role-zone tester">
                             <div class="zone-title">🧪 Table Testeurs (QA)</div>
                             <div class="players-grid" id="tester-players"></div>
                         </div>
                     </div>
 
+                    <!-- SPECTATEURS (PO / BA) -->
                     <div class="spectators-bar">
                         <strong style="color: var(--po-color);">👔 Facilitateurs / PO :</strong>
                         <div class="spectators-list" id="spectator-players"></div>
                     </div>
                 </div>
 
+                <!-- EMOJIS VOLANTS -->
                 <div class="reaction-bar">
                     <button class="reaction-btn" onclick="sendEmoji('👏')" title="Bravo !">👏</button>
                     <button class="reaction-btn" onclick="sendEmoji('🎯')" title="Dans le mille">🎯</button>
@@ -277,6 +285,7 @@
                     <button class="reaction-btn" onclick="sendEmoji('💸')" title="Ça va coûter cher">💸</button>
                 </div>
 
+                <!-- STATS -->
                 <div id="stats-summary" class="stats-wrapper hidden">
                     <div class="stats-box">
                         <div class="stat-value" id="stat-dev-avg">-</div>
@@ -288,6 +297,7 @@
                     </div>
                 </div>
 
+                <!-- MAIN DU JOUEUR -->
                 <div class="hand-container">
                     <div class="hand-title" id="deck-title">Votre estimation</div>
                     <div class="deck-grid" id="deck"></div>
@@ -371,6 +381,11 @@
                             if (data.type === 'STATE_UPDATE') {
                                 gameState = data.state;
                                 isRevealed = gameState.revealed;
+                                
+                                if (!gameState.revealed && gameState.players[peer.id] && gameState.players[peer.id].vote === null) {
+                                    myVote = null;
+                                }
+
                                 document.getElementById('story-title').value = gameState.storyTitle || '';
                                 renderDeck();
                                 renderTable();
@@ -428,6 +443,7 @@
             } else if (data.type === 'RESET') {
                 gameState.revealed = false;
                 Object.keys(gameState.players).forEach(id => gameState.players[id].vote = null);
+                myVote = null;
                 broadcastState();
             } else if (data.type === 'EMOJI') {
                 spawnFloatingEmoji(conn.peer, data.emoji);
@@ -513,17 +529,16 @@
         }
 
         function triggerReset() {
-            myVote = null;
             if (isHost) {
                 gameState.revealed = false;
                 Object.keys(gameState.players).forEach(id => gameState.players[id].vote = null);
+                myVote = null;
                 broadcastState();
             } else if (hostConn && hostConn.open) {
                 hostConn.send({ type: 'RESET' });
             }
         }
 
-        // CÉLÉBRATION DE CONSENSUS
         function checkConsensus() {
             const votes = Object.values(gameState.players)
                 .filter(p => p.role !== 'BA' && typeof p.vote === 'number')
