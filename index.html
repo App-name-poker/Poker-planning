@@ -18,7 +18,7 @@
             --wood-light: #7c3a13;
             --gold: #dfb15b;
             --gold-bright: #ffd700;
-            --gold-shadow: rgba(223, 177, 91, 0.4);
+            --gold-shadow: rgba(223, 177, 91, 0.5);
             --chip-red: #d32f2f;
             --chip-blue: #1976d2;
             --chip-gold: #f59e0b;
@@ -126,7 +126,7 @@
         }
         .story-input::placeholder { color: var(--text-muted); font-weight: 400; }
 
-        /* CASINO POKER TABLE (TAPIS VERT & BORD BOIS) */
+        /* CASINO POKER TABLE */
         .poker-arena { width: 100%; display: flex; flex-direction: column; gap: 1rem; position: relative; }
         
         .casino-table-frame {
@@ -154,7 +154,6 @@
             justify-content: space-between;
         }
 
-        /* FILIGRANE DORÉ DU TAPIS */
         .casino-felt::before {
             content: "♠ ♥ POKER CASINO ♣ ♦";
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -181,9 +180,33 @@
 
         .players-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; width: 100%; }
 
-        /* JOUEURS & TAPIS DE MISE (CHIPS) */
-        .player-card { display: flex; flex-direction: column; align-items: center; width: 85px; position: relative; }
-        
+        /* ========================================================= */
+        /* PROPOSITION 3 : STYLES DES CARTES & INDICATEUR DE VOTE     */
+        /* ========================================================= */
+        .player-card { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 95px; 
+            padding: 8px 6px;
+            border-radius: 16px;
+            position: relative; 
+            background: rgba(5, 15, 10, 0.5);
+            /* État par défaut : en attente de vote */
+            border: 1px dashed rgba(223, 177, 91, 0.3);
+            opacity: 0.75;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* État lorsque le joueur A VOTÉ */
+        .player-card.has-voted {
+            opacity: 1;
+            border: 2px solid var(--gold-bright);
+            background: rgba(15, 30, 20, 0.85);
+            box-shadow: 0 0 15px var(--gold-shadow), inset 0 0 10px rgba(255, 215, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
         .avatar-chair {
             width: 52px; height: 52px; border-radius: 50%; 
             background: linear-gradient(135deg, #1e293b, #0f172a);
@@ -191,19 +214,30 @@
             font-size: 1.5rem; box-shadow: 0 6px 15px rgba(0,0,0,0.6); position: relative;
         }
 
-        /* JETON DE POKER QUAND LE JOUEUR A VOTÉ */
+        /* JETON DE POKER EN HAUT À DROITE DE LA CARTE */
         .chip-voted {
-            position: absolute; top: -6px; right: -6px;
-            width: 22px; height: 22px; border-radius: 50%;
+            position: absolute; 
+            top: -6px; 
+            right: -6px;
+            width: 24px; 
+            height: 24px; 
+            border-radius: 50%;
             background: radial-gradient(circle, #f59e0b 40%, #b45309 100%);
             border: 2px dashed #ffffff;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.8);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 900;
+            color: #fff;
+            animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 5;
         }
 
         @keyframes popIn {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
+            0% { transform: scale(0) rotate(-45deg); }
+            100% { transform: scale(1) rotate(0deg); }
         }
 
         .player-name {
@@ -232,7 +266,6 @@
             color: #0f172a; border: 2px solid #ffffff; transform: rotateY(180deg);
             font-family: 'Cinzel', serif;
         }
-        /* DOS DE CARTE TYPE CASINO MOTIFS ROUGE ET OR */
         .card-face.back {
             background: 
                 radial-gradient(circle, #991b1b 20%, transparent 20%),
@@ -272,7 +305,7 @@
             100% { opacity: 0; transform: translate(calc(-50% + (var(--random-x) * 1.5px)), -200px) scale(1) rotate(var(--random-r)); }
         }
 
-        /* DECK DE CARTES DU JOUEUR (BORDURE DORÉE & TAPIS) */
+        /* DECK DE CARTES DU JOUEUR */
         .hand-container { text-align: center; background: rgba(5, 15, 10, 0.8); border: 1px solid var(--gold); padding: 1.25rem; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .hand-title { font-family: 'Cinzel', serif; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--gold-bright); margin-bottom: 0.8rem; letter-spacing: 0.08em; }
         .deck-grid { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
@@ -306,6 +339,7 @@
 <body>
 
     <div class="container">
+        <!-- ECRAN D'ACCUEIL CASINO -->
         <div id="login-screen" class="login-card">
             <div class="app-logo">🎰</div>
             <h1 class="casino-title">Casino Royale</h1>
@@ -333,6 +367,7 @@
             <p id="status-msg" style="margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-muted);"></p>
         </div>
 
+        <!-- PLATEAU DE JEU CASINO -->
         <div id="game-screen" class="hidden">
             <header class="game-header">
                 <div class="header-left">
@@ -343,6 +378,7 @@
             </header>
 
             <div class="game-body">
+                <!-- TITRE DE LA USER STORY -->
                 <div class="story-bar">
                     <span>🎰</span>
                     <input type="text" id="story-title" class="story-input" placeholder="User Story en cours d'estimation (ex: JIRA-1042)..." oninput="broadcastStoryTitle(this.value)">
@@ -352,17 +388,20 @@
                     <div class="casino-table-frame">
                         <div class="casino-felt">
                             <div class="tables-container">
+                                <!-- TABLE DEVS (FLAMBEURS) -->
                                 <div class="role-zone">
                                     <div class="zone-title">🎩 Flambeurs (Devs)</div>
                                     <div class="players-grid" id="dev-players"></div>
                                 </div>
 
+                                <!-- TABLE TESTEURS (INSPECTEURS) -->
                                 <div class="role-zone">
                                     <div class="zone-title">🕵️ Inspecteurs (QA)</div>
                                     <div class="players-grid" id="tester-players"></div>
                                 </div>
                             </div>
 
+                            <!-- SPECTATEURS (CROUPIERS / PO / BA) -->
                             <div class="spectators-bar">
                                 <strong style="color: var(--gold-bright);">🤵 Croupiers & Maîtres du Jeu :</strong>
                                 <div class="spectators-list" id="spectator-players"></div>
@@ -371,6 +410,7 @@
                     </div>
                 </div>
 
+                <!-- PALETTE D'EMOJIS CASINO -->
                 <div class="reaction-bar">
                     <button class="reaction-btn" onclick="sendEmoji('👏')" title="Bravo !">👏</button>
                     <button class="reaction-btn" onclick="sendEmoji('🎲')" title="Un coup de dés !">🎲</button>
@@ -384,6 +424,7 @@
                     <button class="reaction-btn" onclick="sendEmoji('💸')" title="Ça va coûter cher !">💸</button>
                 </div>
 
+                <!-- STATS -->
                 <div id="stats-summary" class="stats-wrapper hidden">
                     <div class="stats-box">
                         <div class="stat-value" id="stat-dev-avg">-</div>
@@ -395,6 +436,7 @@
                     </div>
                 </div>
 
+                <!-- MAIN DU JOUEUR -->
                 <div class="hand-container">
                     <div class="hand-title" id="deck-title">Faites vos jeux !</div>
                     <div class="deck-grid" id="deck"></div>
@@ -416,7 +458,6 @@
         let hostConn = null;  
         let gameState = { players: {}, revealed: false, storyTitle: '' };
 
-        // EFFET SONORE DE JETON PAR SYNTHÈSE AUDIO WEB
         function playChipSound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -684,6 +725,9 @@
             });
         }
 
+        /* ========================================================= */
+        /* RENDER TABLE : APPLICATION DYNAMIQUE DES CLASSES DE VOTE   */
+        /* ========================================================= */
         function renderTable() {
             const devContainer = document.getElementById('dev-players');
             const testerContainer = document.getElementById('tester-players');
@@ -707,7 +751,8 @@
                 }
 
                 const playerEl = document.createElement('div');
-                playerEl.className = 'player-card';
+                // Ajout de la classe 'has-voted' pour déclencher la Proposition 3
+                playerEl.className = `player-card ${hasVoted ? 'has-voted' : ''}`;
                 playerEl.setAttribute('data-peer-id', pId);
 
                 let flipClass = (hasVoted && isRevealed) ? 'flipped' : '';
@@ -718,13 +763,12 @@
                     if (p.role === 'TESTER') qaVotes.push(p.vote);
                 }
 
-                // AVATARS THÉMATISÉS CASINO
                 const avatarEmoji = p.role === 'DEV' ? '🎩' : '🕵️';
 
                 playerEl.innerHTML = `
+                    ${hasVoted ? '<div class="chip-voted" title="A voté !">✓</div>' : ''}
                     <div class="avatar-chair">
                         ${avatarEmoji}
-                        ${hasVoted ? '<div class="chip-voted"></div>' : ''}
                     </div>
                     <div class="card-flip-container ${flipClass}">
                         <div class="card-flip-inner">
