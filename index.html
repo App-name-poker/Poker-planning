@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planning Poker Agile - Premium Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
-    <!-- Canvas Confetti pour la célébration du consensus -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -142,7 +141,6 @@
             background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
             border: 1.5px solid rgba(255,255,255,0.4); color: transparent;
         }
-        .card-face.empty { visibility: hidden; }
 
         /* BANDEAU SPECTATEURS */
         .spectators-bar {
@@ -273,14 +271,11 @@
                     <button class="reaction-btn" onclick="sendEmoji('👏')" title="Bravo !">👏</button>
                     <button class="reaction-btn" onclick="sendEmoji('🎯')" title="Dans le mille">🎯</button>
                     <button class="reaction-btn" onclick="sendEmoji('🚀')" title="Facile / Rapide">🚀</button>
-
                     <button class="reaction-btn" onclick="sendEmoji('🤯')" title="Ultra complexe">🤯</button>
                     <button class="reaction-btn" onclick="sendEmoji('❓')" title="Pas clair...">❓</button>
                     <button class="reaction-btn" onclick="sendEmoji('🔥')" title="Ça brûle !">🔥</button>
-
                     <button class="reaction-btn" onclick="sendEmoji('☕')" title="Besoin d'une pause">☕</button>
                     <button class="reaction-btn" onclick="sendEmoji('🍿')" title="J'écoute le débat">🍿</button>
-
                     <button class="reaction-btn" onclick="sendEmoji('💩')" title="Code spaghetti">💩</button>
                     <button class="reaction-btn" onclick="sendEmoji('💸')" title="Ça va coûter cher">💸</button>
                 </div>
@@ -382,6 +377,7 @@
                                 gameState = data.state;
                                 isRevealed = gameState.revealed;
                                 
+                                // Reset la carte sélectionnée si la partie repart à zéro
                                 if (!gameState.revealed && gameState.players[peer.id] && gameState.players[peer.id].vote === null) {
                                     myVote = null;
                                 }
@@ -441,10 +437,7 @@
             } else if (data.type === 'REVEAL') {
                 triggerReveal();
             } else if (data.type === 'RESET') {
-                gameState.revealed = false;
-                Object.keys(gameState.players).forEach(id => gameState.players[id].vote = null);
-                myVote = null;
-                broadcastState();
+                triggerReset();
             } else if (data.type === 'EMOJI') {
                 spawnFloatingEmoji(conn.peer, data.emoji);
                 connections.forEach(c => {
@@ -529,12 +522,14 @@
         }
 
         function triggerReset() {
+            myVote = null; // Réinitialise la carte sélectionnée localement
+
             if (isHost) {
                 gameState.revealed = false;
                 Object.keys(gameState.players).forEach(id => gameState.players[id].vote = null);
-                myVote = null;
                 broadcastState();
             } else if (hostConn && hostConn.open) {
+                renderDeck();
                 hostConn.send({ type: 'RESET' });
             }
         }
