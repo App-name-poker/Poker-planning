@@ -1,0 +1,23 @@
+name: Déploiement Automatique
+
+# Définition des événements qui déclenchent le déploiement
+on:
+  push:
+    branches:
+      - main         # Se déclenche lors d'un 'git push' sur la branche main
+  workflow_dispatch: # Permet aussi de le lancer manuellement
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # Le serveur virtuel fourni par GitHub
+
+    steps:
+      # 1. Récupère le code de ton dépôt sur le serveur virtuel
+      - name: Récupérer le code source
+        uses: actions/checkout@v4
+
+      # 2. Exécute tes étapes de build ou de déploiement
+      - name: Exécuter le script de déploiement
+        run: |
+          echo "Le code a été récupéré avec succès !"
+          echo "Prêt pour l'étape de déploiement !"
