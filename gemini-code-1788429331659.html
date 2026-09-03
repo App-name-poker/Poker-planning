@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planning Poker Agile - Multi-Tables</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #e0e7ff;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --dev-zone: #3b82f6;
+            --tester-zone: #10b981;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; overflow-x: hidden; }
+        .hidden { display: none !important; }
+
+        .container {
+            width: 100%; max-width: 1000px; background: var(--card-bg);
+            border-radius: 24px; box-shadow: var(--shadow-lg); border: 1px solid var(--border);
+            overflow: hidden; margin: auto; position: relative;
+        }
+
+        /* ACCUEIL */
+        .login-card { padding: 3rem 2rem; text-align: center; max-width: 480px; margin: 0 auto; }
+        .app-logo { width: 70px; height: 70px; background: var(--primary-light); color: var(--primary); border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 2.5rem; margin-bottom: 1rem; }
+        .login-card h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .login-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; text-align: left; }
+        .form-group label { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem; text-transform: uppercase; }
+        
+        input[type="text"], select {
+            width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border);
+            border-radius: 12px; font-size: 0.95rem; outline: none; background: white;
+        }
+        input[type="text"]:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 0.9rem; font-weight: 600; padding: 0.75rem 1.25rem; border: none;
+            border-radius: 12px; cursor: pointer; transition: all 0.2s ease; width: 100%;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: #f3f4f6; color: var(--text-main); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #e5e7eb; }
+        .btn-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; width: auto; }
+
+        /* GAME HEADER */
+        .game-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .room-badge { background: var(--primary-light); color: var(--primary); padding: 0.3rem 0.8rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem; }
+        .btn-copy { background: white; border: 1px solid var(--border); color: var(--text-muted); padding: 0.3rem 0.6rem; border-radius: 20px; font-size: 0.75rem; cursor: pointer; }
+
+        .game-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+        /* ARÈNE DOUBLE ZONE (DEV vs TEST) */
+        .poker-arena {
+            width: 100%; display: flex; flex-direction: column; gap: 1rem; position: relative; padding: 0.5rem 0;
+        }
+
+        .tables-container {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; width: 100%;
+        }
+
+        .role-zone {
+            border-radius: 20px; padding: 1rem; position: relative; min-height: 220px;
+            display: flex; flex-direction: column; align-items: center; border: 2px dashed var(--border);
+            background: #fafafa;
+        }
+        .role-zone.dev { border-color: #93c5fd; background: #eff6ff; }
+        .role-zone.tester { border-color: #6ee7b7; background: #ecfdf5; }
+
+        .zone-title {
+            font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+            margin-bottom: 0.8rem; padding: 4px 12px; border-radius: 12px; background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .dev .zone-title { color: #1d4ed8; }
+        .tester .zone-title { color: #047857; }
+
+        .players-grid {
+            display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%;
+        }
+
+        /* CARTE JOUEUR */
+        .player-card {
+            display: flex; flex-direction: column; align-items: center; width: 75px; position: relative;
+        }
+        .avatar-chair {
+            width: 44px; height: 44px; border-radius: 50%; background: white;
+            border: 2px solid var(--border); display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; box-shadow: 0 2px 6px rgba(0,0,0,0.06); position: relative;
+        }
+        .voted-dot {
+            position: absolute; top: -2px; right: -2px; width: 14px; height: 14px;
+            background: #10b981; border: 2px solid white; border-radius: 50%;
+        }
+        .player-name {
+            font-size: 0.7rem; font-weight: 700; margin-top: 4px; text-align: center;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75px;
+        }
+
+        .card-slot {
+            width: 32px; height: 46px; border-radius: 6px; background: white;
+            color: var(--primary); font-weight: 800; font-size: 1rem; border: 1.5px solid var(--border);
+            display: flex; justify-content: center; align-items: center; margin-top: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .card-slot.back { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-color: white; color: transparent; }
+        .card-slot.empty { visibility: hidden; }
+
+        /* ZONE SPECTATEURS / BA */
+        .spectators-bar {
+            background: #f8fafc; border: 1px solid var(--border); border-radius: 12px;
+            padding: 0.5rem 1rem; display: flex; align-items: center; gap: 10px; font-size: 0.8rem;
+        }
+        .spectators-list { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* EXPANSION PALETTE EMOJIS */
+        .reaction-bar {
+            display: flex; justify-content: center; gap: 6px; background: white;
+            padding: 8px 12px; border-radius: 30px; border: 1px solid var(--border);
+            box-shadow: var(--shadow); margin: 0 auto; width: fit-content; flex-wrap: wrap;
+        }
+        .reaction-btn {
+            font-size: 1.25rem; background: none; border: none; cursor: pointer;
+            transition: transform 0.15s ease; padding: 2px 5px; border-radius: 8px;
+        }
+        .reaction-btn:hover { transform: scale(1.35); background: var(--bg); }
+
+        /* ANIMATION DES EMOJIS VOLANTS */
+        .floating-emoji {
+            position: absolute; font-size: 2.2rem; pointer-events: none; z-index: 100;
+            animation: floatUp 2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(0.5) rotate(0deg); }
+            50% { opacity: 0.9; transform: translate(calc(-50% + (var(--random-x) * 1px)), -80px) scale(1.4) rotate(var(--random-r)); }
+            100% { opacity: 0; transform: translate(calc(-50% + (var(--random-x) * 1.5px)), -180px) scale(1) rotate(var(--random-r)); }
+        }
+
+        /* DECK */
+        .hand-container { text-align: center; background: #fafafa; border: 1px solid var(--border); padding: 1rem; border-radius: 16px; }
+        .hand-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.6rem; }
+        .deck-grid { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+        .poker-card {
+            width: 46px; height: 68px; border: 2px solid var(--border); border-radius: 10px;
+            background: white; font-size: 1.1rem; font-weight: 800; color: var(--primary);
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            transition: all 0.15s ease; user-select: none;
+        }
+        .poker-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .poker-card.selected { background: var(--primary); color: white; transform: translateY(-8px); border-color: var(--primary); }
+
+        /* STATS PAR RÔLE */
+        .stats-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .stats-box { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 0.8rem; text-align: center; }
+        .stat-value { font-size: 1.3rem; font-weight: 800; color: #047857; }
+        .stat-label { font-size: 0.65rem; font-weight: 700; color: #059669; text-transform: uppercase; }
+
+        .controls-bar { display: flex; gap: 10px; justify-content: center; border-top: 1px solid var(--border); padding-top: 1rem; }
+        .controls-bar .btn { width: auto; min-width: 170px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- LOGIN -->
+        <div id="login-screen" class="login-card">
+            <div class="app-logo">🃏</div>
+            <h1>Planning Poker</h1>
+            <p>Session collaborative Devs & QA</p>
+
+            <form onsubmit="handleJoin(event)">
+                <div class="form-group">
+                    <label for="username">Votre Pseudo</label>
+                    <input type="text" id="username" placeholder="ex: Thomas" required autofocus autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="user-role">Votre Rôle</label>
+                    <select id="user-role" required>
+                        <option value="DEV">👨‍💻 Développeur (Table Devs)</option>
+                        <option value="TESTER">🧪 Testeur / QA (Table QA)</option>
+                        <option value="BA">👔 Product Owner / BA (Spectateur)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="room-id">Code de la session</label>
+                    <input type="text" id="room-id" required autocomplete="off">
+                </div>
+                <button type="submit" id="btn-submit" class="btn btn-primary">Rejoindre la session ♠️</button>
+            </form>
+            <p id="status-msg" style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted);"></p>
+        </div>
+
+        <!-- PLATEAU -->
+        <div id="game-screen" class="hidden">
+            <header class="game-header">
+                <div class="header-left">
+                    <span class="room-badge" id="display-room"></span>
+                    <button class="btn-copy" onclick="copyTableLink()" id="btn-copy-link">🔗 Copier le lien</button>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="location.reload()">Quitter</button>
+            </header>
+
+            <div class="game-body">
+                
+                <div class="poker-arena" id="poker-arena">
+                    <div class="tables-container">
+                        <!-- TABLE DEVS -->
+                        <div class="role-zone dev">
+                            <div class="zone-title">👨‍💻 Table Développeurs</div>
+                            <div class="players-grid" id="dev-players"></div>
+                        </div>
+
+                        <!-- TABLE TESTEURS -->
+                        <div class="role-zone tester">
+                            <div class="zone-title">🧪 Table Testeurs (QA)</div>
+                            <div class="players-grid" id="tester-players"></div>
+                        </div>
+                    </div>
+
+                    <!-- BANDEAU SPECTATEURS (PO / BA) -->
+                    <div class="spectators-bar">
+                        <strong style="color:var(--text-muted);">👔 Facilitateurs / PO :</strong>
+                        <div class="spectators-list" id="spectator-players"></div>
+                    </div>
+                </div>
+
+                <!-- PALETTE ÉTENDUE D'EMOJIS (12 Emojis variés) -->
+                <div class="reaction-bar">
+                    <button class="reaction-btn" onclick="sendEmoji('👏')" title="Bravo !">👏</button>
+                    <button class="reaction-btn" onclick="sendEmoji('🎯')" title="Dans le mille">🎯</button>
+                    <button class="reaction-btn" onclick="sendEmoji('🚀')" title="Facile / Rapide">🚀</button>
+
+                    <button class="reaction-btn" onclick="sendEmoji('🤯')" title="Ultra complexe">🤯</button>
+                    <button class="reaction-btn" onclick="sendEmoji('❓')" title="Pas clair...">❓</button>
+                    <button class="reaction-btn" onclick="sendEmoji('🔥')" title="Ça brûle !">🔥</button>
+
+                    <button class="reaction-btn" onclick="sendEmoji('☕')" title="Besoin d'une pause">☕</button>
+                    <button class="reaction-btn" onclick="sendEmoji('🍿')" title="J'écoute le débat">🍿</button>
+                    <button class="reaction-btn" onclick="sendEmoji('👀')" title="Je regarde les votes">👀</button>
+
+                    <button class="reaction-btn" onclick="sendEmoji('💩')" title="Oups / Code spaghetti">💩</button>
+                    <button class="reaction-btn" onclick="sendEmoji('🤦‍♂️')" title="Oubli critique">🤦‍♂️</button>
+                    <button class="reaction-btn" onclick="sendEmoji('💸')" title="Ça va coûter cher">💸</button>
+                </div>
+
+                <!-- STATISTIQUES SÉPARÉES DEV vs QA -->
+                <div id="stats-summary" class="stats-wrapper hidden">
+                    <div class="stats-box">
+                        <div class="stat-value" id="stat-dev-avg">-</div>
+                        <div class="stat-label">Moyenne Devs</div>
+                    </div>
+                    <div class="stats-box">
+                        <div class="stat-value" id="stat-qa-avg">-</div>
+                        <div class="stat-label">Moyenne Testeurs</div>
+                    </div>
+                </div>
+
+                <!-- MAIN DU JOUEUR -->
+                <div class="hand-container">
+                    <div class="hand-title" id="deck-title">Votre estimation</div>
+                    <div class="deck-grid" id="deck"></div>
+                </div>
+
+                <div class="controls-bar">
+                    <button class="btn btn-primary" onclick="triggerReveal()">👀 Révéler les cartes</button>
+                    <button class="btn btn-secondary" onclick="triggerReset()">🔄 Tour suivant</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CARD_VALUES = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, '☕', '❓'];
+        let peer = null, isHost = false;
+        let myName = '', myRole = 'DEV', roomCode = '', myVote = null, isRevealed = false;
+        let connections = []; 
+        let hostConn = null;  
+        let gameState = { players: {}, revealed: false };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlHash = window.location.hash.replace('#', '').trim();
+            const inputRoom = document.getElementById('room-id');
+            inputRoom.value = urlHash ? urlHash : 'poker-' + Math.floor(100 + Math.random() * 900);
+        });
+
+        function copyTableLink() {
+            const fullUrl = window.location.origin + window.location.pathname + '#' + roomCode;
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                const btn = document.getElementById('btn-copy-link');
+                btn.innerText = '✓ Copié !';
+                setTimeout(() => btn.innerText = '🔗 Copier le lien', 2000);
+            });
+        }
+
+        function handleJoin(e) {
+            e.preventDefault();
+            myName = document.getElementById('username').value.trim();
+            myRole = document.getElementById('user-role').value;
+            roomCode = document.getElementById('room-id').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+
+            if (!myName || !roomCode) return;
+            window.location.hash = roomCode;
+
+            document.getElementById('btn-submit').disabled = true;
+            document.getElementById('status-msg').innerText = "Connexion en cours...";
+
+            const hostPeerId = "poker-room-v2-" + roomCode;
+            peer = new Peer(hostPeerId);
+
+            peer.on('open', () => {
+                isHost = true;
+                gameState.players[peer.id] = { name: myName, role: myRole, vote: null };
+                setupGameUI();
+                
+                peer.on('connection', (conn) => {
+                    connections.push(conn);
+                    conn.on('data', (data) => handleDataFromClient(conn, data));
+                    conn.on('close', () => {
+                        delete gameState.players[conn.peer];
+                        checkAutoReveal();
+                        broadcastState();
+                    });
+                });
+            });
+
+            peer.on('error', (err) => {
+                if (err.type === 'unavailable-id') {
+                    peer = new Peer();
+                    peer.on('open', () => {
+                        isHost = false;
+                        hostConn = peer.connect(hostPeerId);
+                        
+                        hostConn.on('open', () => {
+                            setupGameUI();
+                            hostConn.send({ type: 'JOIN', name: myName, role: myRole });
+                        });
+
+                        hostConn.on('data', (data) => {
+                            if (data.type === 'STATE_UPDATE') {
+                                gameState = data.state;
+                                isRevealed = gameState.revealed;
+                                renderDeck();
+                                renderTable();
+                            } else if (data.type === 'EMOJI') {
+                                spawnFloatingEmoji(data.peerId, data.emoji);
+                            }
+                        });
+                    });
+                } else {
+                    document.getElementById('status-msg').innerText = "Erreur de connexion.";
+                    document.getElementById('btn-submit').disabled = false;
+                }
+            });
+        }
+
+        function setupGameUI() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('display-room').innerText = '#' + roomCode;
+            renderDeck();
+            renderTable();
+        }
+
+        function checkAutoReveal() {
+            if (!isHost || gameState.revealed) return;
+            const voters = Object.values(gameState.players).filter(p => p.role !== 'BA');
+            if (voters.length === 0) return;
+            const allVoted = voters.every(p => p.vote !== null && p.vote !== undefined);
+            if (allVoted) gameState.revealed = true;
+        }
+
+        function handleDataFromClient(conn, data) {
+            if (!isHost) return;
+            if (data.type === 'JOIN') {
+                gameState.players[conn.peer] = { name: data.name, role: data.role, vote: null };
+                broadcastState();
+            } else if (data.type === 'VOTE') {
+                if (gameState.players[conn.peer]) gameState.players[conn.peer].vote = data.vote;
+                checkAutoReveal();
+                broadcastState();
+            } else if (data.type === 'REVEAL') {
+                gameState.revealed = true;
+                broadcastState();
+            } else if (data.type === 'RESET') {
+                gameState.revealed = false;
+                Object.keys(gameState.players).forEach(id => gameState.players[id].vote = null);
+                broadcastState();
+            } else if (data.type === 'EMOJI') {
+                spawnFloatingEmoji(conn.peer, data.emoji);
+                connections.forEach(c => {
+                    if (c.open) c.send({ type: 'EMOJI', peerId: conn.peer, emoji: data.emoji });
+                });
+            }
+        }
+
+        function broadcastState() {
+            if (!isHost) return;
+            isRevealed = gameState.revealed;
+            renderDeck();
+            renderTable();
+            connections.forEach(conn => {
+                if (conn.open) conn.send({ type: 'STATE_UPDATE', state: gameState });
+            });
+        }
+
+        function selectVote(val) {
+            if (myRole === 'BA' || isRevealed) return;
+            myVote = (myVote === val) ? null : val;
+            
+            if (isHost) {
+                gameState.players[peer.id].vote = myVote;
+                checkAutoReveal();
+                broadcastState();
+            } else if (hostConn && hostConn.open) {
+                hostConn.send({ type: 'VOTE', vote: myVote });
+            }
+            renderDeck();
+        }
+
+        function sendEmoji(emoji) {
+            const senderId = peer.id;
+            spawnFloatingEmoji(senderId, emoji);
+
+            if (isHost) {
+                connections.forEach(c => {
+                    if (c.open) c.send({ type: 'EMOJI', peerId: senderId, emoji: emoji });
+                });
+            } else if (hostConn && hostConn.open) {
+                hostConn.send({ type: 'EMOJI', emoji: emoji });
+            }
+        }
+
+        function spawnFloatingEmoji(senderId, emoji) {
+            const playerEl = document.querySelector(`[data-peer-id="${senderId}"]`);
+            const arena = document.getElementById('poker-arena');
+            if (!arena) return;
+
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.innerText = emoji;
+
+            let startX = arena.offsetWidth / 2;
+            let startY = arena.offsetHeight / 2;
+
+            if (playerEl) {
+                const rect = playerEl.getBoundingClientRect();
+                const arenaRect = arena.getBoundingClientRect();
+                startX = rect.left - arenaRect.left + (rect.width / 2);
+                startY = rect.top - arenaRect.top + (rect.height / 2);
+            }
+
+            el.style.left = startX + 'px';
+            el.style.top = startY + 'px';
+            el.style.setProperty('--random-x', (Math.random() * 100 - 50).toString());
+            el.style.setProperty('--random-r', (Math.random() * 40 - 20) + 'deg');
+
+            arena.appendChild(el);
+            setTimeout(() => el.remove(), 2000);
+        }
+
+        function triggerReveal() {
+            if (isHost) { gameState.revealed = true; broadcastState(); }
+            else if (hostConn && hostConn.open) { hostConn.send({ type: 'REVEAL' }); }
+        }
+
+        function triggerReset() {
+            myVote = null;
+            if (isHost) {
+                gameState.revealed = false;
+                Object.keys(gameState.players).forEach(id => gameState.players[id].vote = null);
+                broadcastState();
+            } else if (hostConn && hostConn.open) { hostConn.send({ type: 'RESET' }); }
+        }
+
+        function renderDeck() {
+            const deck = document.getElementById('deck'); deck.innerHTML = '';
+            const deckTitle = document.getElementById('deck-title');
+
+            if (myRole === 'BA') {
+                deckTitle.innerText = "👔 Mode PO / Spectateur";
+                deck.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; padding:0.5rem;">Vous organisez la session sans participer au vote.</div>`;
+                return;
+            }
+
+            deckTitle.innerText = isRevealed ? "Cartes dévoilées" : "Sélectionnez votre estimation";
+            CARD_VALUES.forEach(val => {
+                const btn = document.createElement('div');
+                btn.className = `poker-card ${myVote === val ? 'selected' : ''}`;
+                btn.innerText = val; 
+                btn.onclick = () => selectVote(val);
+                deck.appendChild(btn);
+            });
+        }
+
+        function renderTable() {
+            const devContainer = document.getElementById('dev-players');
+            const testerContainer = document.getElementById('tester-players');
+            const specContainer = document.getElementById('spectator-players');
+
+            devContainer.innerHTML = ''; testerContainer.innerHTML = ''; specContainer.innerHTML = '';
+
+            const devVotes = [], qaVotes = [];
+
+            Object.entries(gameState.players).forEach(([pId, p]) => {
+                const hasVoted = p.role !== 'BA' && p.vote !== null && p.vote !== undefined;
+
+                if (p.role === 'BA') {
+                    const specBadge = document.createElement('span');
+                    specBadge.className = 'player-name';
+                    specBadge.setAttribute('data-peer-id', pId);
+                    specBadge.style.cssText = "background:white; padding: 2px 8px; border-radius:10px; border:1px solid #cbd5e1;";
+                    specBadge.innerText = `👔 ${p.name}`;
+                    specContainer.appendChild(specBadge);
+                    return;
+                }
+
+                const playerEl = document.createElement('div');
+                playerEl.className = 'player-card';
+                playerEl.setAttribute('data-peer-id', pId);
+
+                let cardContent = '<div class="card-slot empty"></div>';
+                if (hasVoted) {
+                    if (isRevealed) {
+                        cardContent = `<div class="card-slot">${p.vote}</div>`;
+                        if (typeof p.vote === 'number') {
+                            if (p.role === 'DEV') devVotes.push(p.vote);
+                            if (p.role === 'TESTER') qaVotes.push(p.vote);
+                        }
+                    } else {
+                        cardContent = `<div class="card-slot back"></div>`;
+                    }
+                }
+
+                const avatarEmoji = p.role === 'DEV' ? '👨‍💻' : '🧪';
+                playerEl.innerHTML = `
+                    <div class="avatar-chair">
+                        ${avatarEmoji}
+                        ${hasVoted ? '<div class="voted-dot"></div>' : ''}
+                    </div>
+                    ${cardContent}
+                    <div class="player-name">${escapeHtml(p.name)}</div>
+                `;
+
+                if (p.role === 'DEV') devContainer.appendChild(playerEl);
+                else if (p.role === 'TESTER') testerContainer.appendChild(playerEl);
+            });
+
+            // Affichage des moyennes par rôle
+            const statsBox = document.getElementById('stats-summary');
+            if (isRevealed && (devVotes.length > 0 || qaVotes.length > 0)) {
+                statsBox.classList.remove('hidden');
+                document.getElementById('stat-dev-avg').innerText = devVotes.length ? (devVotes.reduce((a,b)=>a+b,0)/devVotes.length).toFixed(1) : '-';
+                document.getElementById('stat-qa-avg').innerText = qaVotes.length ? (qaVotes.reduce((a,b)=>a+b,0)/qaVotes.length).toFixed(1) : '-';
+            } else {
+                statsBox.classList.add('hidden');
+            }
+        }
+
+        function escapeHtml(t) { return t.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])); }
+    </script>
+</body>
+</html>
